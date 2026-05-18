@@ -1,0 +1,22 @@
+{
+  "filename_regex": "^example_.*\\.csv$",
+  "redshift_schema": "silver",
+  "redshift_table": "example_table",
+  "redshift_file_name_col": "file_name",
+  "pk_columns": [
+    "id"
+  ],
+  "ignore_columns": [
+    "etl_load_ts"
+  ],
+  "pii_columns": [],
+  "pk_dup_sample_limit": 200,
+  "only_sample_limit": 200,
+  "hash_mismatch_pk_sample_limit": 200,
+  "per_column_mismatch_sample_limit": 100,
+  "max_hash_mismatch_rows_for_column_compare": 10000,
+  "column_compare_batch_size": 25,
+  "value_mismatch_global_sample_limit": 100000,
+  "join_repartition": 150,
+  "checkpoint_enabled": true
+}
