@@ -12,23 +12,23 @@ from pyspark import StorageLevel
 from pyspark.context import SparkContext
 from pyspark.sql import functions as F
 
-from .config_loader import load_runtime_config_from_s3
-from .evidence_writer import (build_value_samples_for_failed_columns,
+from config_loader import load_runtime_config_from_s3
+from evidence_writer import (build_value_samples_for_failed_columns,
                               write_column_counts, write_dup_evidence,
                               write_empty_csv)
-from .normalization_utils import (canon_header, derive_scale_from_redshift,
+from normalization_utils import (canon_header, derive_scale_from_redshift,
                                   normalize_headers)
-from .output_writer import write_error_outputs, write_success_outputs
-from .reconciliation_utils import (build_key_hash_df,
+from output_writer import write_error_outputs, write_success_outputs
+from reconciliation_utils import (build_key_hash_df,
                                    build_mismatch_join_for_columns,
                                    build_normalized_dataset, build_raw_dataset,
                                    build_raw_mismatch_join_for_evidence,
                                    compute_column_mismatch_counts,
                                    duplicate_pk_df, reconcile_keys)
-from .redshift_reader import build_redshift_query
-from .s3_io import (ensure_trailing_slash, resolve_single_s3_file, s3_join,
+from redshift_reader import build_redshift_query
+from s3_io import (ensure_trailing_slash, resolve_single_s3_file, s3_join,
                     spark_write_csv)
-from .spark_utils import (configure_spark, get_logger, now_utc_iso,
+from spark_utils import (configure_spark, get_logger, now_utc_iso,
                           run_ts_folder_utc, safe_unpersist)
 
 logger = get_logger(__name__)
@@ -355,11 +355,10 @@ def main():
             r_key,
             pk_norm_cols,
             cfg["JOIN_REPARTITION"],
-            cfg["CHECKPOINT_ENABLED"],
         )
-        s3_only = recon["s3_only"].persist(StorageLevel.MEMORY_AND_DISK)
-        rs_only = recon["rs_only"].persist(StorageLevel.MEMORY_AND_DISK)
-        mismatched_pk = recon["hash_mismatch"].persist(StorageLevel.MEMORY_AND_DISK)
+        s3_only = recon["s3_only"]
+        rs_only = recon["rs_only"]
+        mismatched_pk = recon["hash_mismatch"]
         s3_only_cnt = int(s3_only.count())
         rs_only_cnt = int(rs_only.count())
         mismatch_pk_count = int(mismatched_pk.count())
@@ -559,7 +558,7 @@ def main():
             s3_only,
             rs_only,
             mismatched_pk,
-            recon.get("joined"),
+            recon.get("matched"),
         )
         if fail and cfg["FAIL_JOB_ON_DQ"]:
             raise RuntimeError(

@@ -5,9 +5,9 @@ from typing import List, Set, Tuple
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
-from .mask_utils import build_pk_mask_cols, get_mask_udf
-from .s3_io import spark_write_csv
-from .spark_utils import chunks
+from mask_utils import build_pk_mask_cols, get_mask_udf
+from s3_io import spark_write_csv
+from spark_utils import chunks
 
 
 def write_empty_csv(spark: SparkSession, path: str, schema: str) -> None:
@@ -50,7 +50,8 @@ def build_value_samples_for_failed_columns(
     for batch_cols in chunks(failed_columns, batch_size):
         structs = []
         for c in batch_cols:
-            diff = ~F.col(f"b_n_{c}").eqNullSafe(F.col(f"r_n_{c}"))
+            diff = ~F.col(f"b_h_{c}").eqNullSafe(F.col(f"r_h_{c}"))
+            
             structs.append(
                 F.when(
                     diff,

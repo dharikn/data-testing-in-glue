@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from .s3_io import s3_put_json
+from s3_io import s3_put_json
 
 
 def write_success_outputs(

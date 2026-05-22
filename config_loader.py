@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Tuple
 
-from .s3_io import ensure_trailing_slash, s3_get_json
+from s3_io import ensure_trailing_slash, s3_get_json
 
 
 def _as_str(v: Any, field_name: str, required: bool = True, default: str = "") -> str:
