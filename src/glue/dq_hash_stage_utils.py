@@ -21,12 +21,17 @@ def build_hash_stage_dataset(
     compare_cols: List[str],
     scale_by_col: Dict[str, int],
     pii_set: Set[str],
+    normalization_cfg: Dict = None,
 ) -> DataFrame:
     """Create PK hash, row hash, and per-column hashes.
 
     This is the key performance layer.  Later reconciliation compares
     fixed-width hashes instead of full normalised business values.
     """
+    normalization_cfg = normalization_cfg or {}
+    null_exclusions = {str(c).lower() for c in normalization_cfg.get("NULL_LIKE_EXCLUDE_COLUMNS", [])}
+    percent_cols = {str(c).lower() for c in normalization_cfg.get("PERCENTAGE_TO_NUMBER_COLUMNS", [])}
+    source_formats = normalization_cfg.get("SOURCE_DATE_FORMATS", {})
     pk_norm_cols = [f"pk_n_{col}" for col in pk_cols]
     pk_norm_pairs = list(zip(pk_norm_cols, pk_cols))
     expressions = []
@@ -44,6 +49,9 @@ def build_hash_stage_dataset(
         norm_expr = normalize_value_auto(
             F.col(col_name),
             scale_by_col.get(col_name),
+            null_like_values=[] if col_name.lower() in null_exclusions else normalization_cfg.get("NULL_LIKE_VALUES", []),
+            percentage_to_number=col_name.lower() in percent_cols,
+            source_date_format=source_formats.get(col_name.lower()),
         )
         expressions.append(
             F.sha2(F.coalesce(norm_expr, F.lit("∅")), 256)
