@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Sequence
 
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
@@ -40,6 +40,7 @@ def normalize_headers(df: DataFrame) -> DataFrame:
 def _base_string(col: Column) -> Column:
     """Apply common trim, null, and whitespace cleanup."""
     text = F.trim(F.coalesce(col.cast("string"), F.lit("")))
+    text = F.regexp_replace(text, r"[\x00\x1a]", "")
     return F.regexp_replace(text, r"\s+", " ")
 
 
@@ -212,7 +213,7 @@ def normalize_numeric_string(
         decimal_value = text.cast("decimal(38,18)")
 
     canonical = decimal_value.cast("string")
-    canonical = F.regexp_replace(canonical, r"(\.\d*?)0+$", r"\1")
+    canonical = F.regexp_replace(canonical, r"(\.\d*?)0+$", "$1")
     canonical = F.regexp_replace(canonical, r"\.$", "")
     canonical = F.when(
         canonical == "-0",
@@ -226,9 +227,20 @@ def normalize_numeric_string(
 def normalize_value_auto(
     col: Column,
     scale: Optional[int],
+    null_like_values: Optional[Sequence[str]] = None,
+    percentage_to_number: bool = False,
+    source_date_format: Optional[str] = None,
 ) -> Column:
     """Normalise a business value using date and numeric rules."""
     base_value = normalize_value_auto_base(col)
+    if null_like_values:
+        tokens = [str(v).strip().upper() for v in null_like_values]
+        base_value = F.when(F.upper(_base_string(col)).isin(*tokens), F.lit("")).otherwise(base_value)
+    if source_date_format:
+        parsed = F.to_date(_base_string(col), source_date_format)
+        base_value = F.when(parsed.isNotNull(), F.date_format(parsed, "yyyy-MM-dd")).otherwise(base_value)
+    if percentage_to_number:
+        base_value = F.regexp_replace(base_value, r"%$", "")
     return normalize_numeric_string(base_value, scale)
 
 

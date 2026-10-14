@@ -113,7 +113,18 @@ def load_runtime_config_from_s3(
 
     join_repartition = _int(mapping.get("join_repartition"), 300)
 
+    normalization = mapping.get("normalization") or {}
+    if not isinstance(normalization, dict):
+        raise RuntimeError("normalization must be an object")
+    source_formats = normalization.get("source_date_formats", mapping.get("source_date_formats", {})) or {}
+    if not isinstance(source_formats, dict):
+        raise RuntimeError("source_date_formats must be an object")
     cfg: Dict[str, Any] = {
+        "NULL_LIKE_VALUES": _list(normalization.get("null_like_values", mapping.get("null_like_values"))),
+        "NULL_LIKE_EXCLUDE_COLUMNS": _list(normalization.get("null_like_exclude_columns", mapping.get("null_like_exclude_columns"))),
+        "SOURCE_DATE_FORMATS": {str(k).strip().lower(): str(v).strip() for k, v in source_formats.items()},
+        "PERCENTAGE_TO_NUMBER_COLUMNS": _list(normalization.get("percentage_to_number_columns", mapping.get("percentage_to_number_columns"))),
+
         "BOOTSTRAP_URI": bootstrap_uri,
         "S3_CONFIG_URI": s3_cfg_uri,
         "REDSHIFT_CONFIG_URI": rs_cfg_uri,
