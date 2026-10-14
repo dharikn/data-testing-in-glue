@@ -162,6 +162,7 @@ def build_hash_stage(
         compare_cols,
         scale_by_col,
         pii_set,
+        cfg,
     )
     rs_hash = build_hash_stage_dataset(
         redshift,
